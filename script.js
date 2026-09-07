@@ -1,16 +1,425 @@
-document.getElementById('contactForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-  
-    const name = this.name.value.trim();
-    const email = this.email.value.trim();
-    const message = this.message.value.trim();
-    const response = document.getElementById('responseMessage');
-  
-    if(name && email && message) {
-      response.textContent = `Thank you, ${name}! Your message has been sent.`;
-      this.reset();
-    } else {
-      response.textContent = 'Please fill out all fields.';
-    }
-  });
-  
+<script>
+        // ==================== THREE.JS BACKGROUND ====================
+        (function initThreeBackground() {
+            const canvas = document.getElementById('three-bg');
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x06060e, 1);
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 0, 12);
+            camera.lookAt(0, 0, 0);
+
+            const ambientLight = new THREE.AmbientLight(0x111122);
+            scene.add(ambientLight);
+            const pointLight1 = new THREE.PointLight(0x6366f1, 2, 20);
+            pointLight1.position.set(5, 3, 5);
+            scene.add(pointLight1);
+            const pointLight2 = new THREE.PointLight(0xf472b6, 1.5, 20);
+            pointLight2.position.set(-5, -2, 3);
+            scene.add(pointLight2);
+            const pointLight3 = new THREE.PointLight(0x22d3ee, 1.5, 20);
+            pointLight3.position.set(0, 4, -4);
+            scene.add(pointLight3);
+
+            const particlesCount = 700;
+            const positions = new Float32Array(particlesCount * 3);
+            const colors = new Float32Array(particlesCount * 3);
+            for (let i = 0; i < particlesCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 30;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 25;
+                const c = new THREE.Color().setHSL(0.65 + Math.random() * 0.2, 0.7, 0.5 + Math.random() * 0.4);
+                colors[i * 3] = c.r;
+                colors[i * 3 + 1] = c.g;
+                colors[i * 3 + 2] = c.b;
+            }
+            const particlesGeo = new THREE.BufferGeometry();
+            particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particlesGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            const particlesMat = new THREE.PointsMaterial({
+                size: 0.06,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.7,
+                sizeAttenuation: true,
+            });
+            const particles = new THREE.Points(particlesGeo, particlesMat);
+            scene.add(particles);
+
+            const torusKnotGeo = new THREE.TorusKnotGeometry(1.5, 0.45, 100, 16);
+            const torusKnotMat = new THREE.MeshStandardMaterial({
+                color: 0x1a1a3a,
+                roughness: 0.3,
+                metalness: 0.8,
+                emissive: 0x111122,
+                emissiveIntensity: 0.5,
+            });
+            const torusKnot = new THREE.Mesh(torusKnotGeo, torusKnotMat);
+            torusKnot.position.set(0, 0, -2);
+            scene.add(torusKnot);
+
+            const ringGeo = new THREE.TorusGeometry(2.8, 0.03, 32, 100);
+            const ringMat = new THREE.MeshStandardMaterial({
+                color: 0x6366f1,
+                roughness: 0.2,
+                metalness: 0.9,
+                emissive: 0x3344aa,
+                emissiveIntensity: 0.6,
+            });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.set(0, 0, -2);
+            ring.rotation.x = Math.PI / 2.2;
+            ring.rotation.z = 0.5;
+            scene.add(ring);
+
+            const ring2Geo = new THREE.TorusGeometry(2.2, 0.04, 24, 80);
+            const ring2Mat = new THREE.MeshStandardMaterial({
+                color: 0xf472b6,
+                roughness: 0.25,
+                metalness: 0.85,
+                emissive: 0x442233,
+                emissiveIntensity: 0.5,
+            });
+            const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+            ring2.position.set(0, 0.2, -2);
+            ring2.rotation.x = Math.PI / 1.8;
+            ring2.rotation.z = -0.3;
+            scene.add(ring2);
+
+            const smallSpheres = [];
+            const sphereData = [
+                { x: 3, y: 1.5, z: -1, color: 0xf472b6, s: 0.2 },
+                { x: -3, y: -1, z: 0.5, color: 0x22d3ee, s: 0.16 },
+                { x: 2, y: -2, z: 2, color: 0x6366f1, s: 0.18 },
+                { x: -2.5, y: 2, z: 1.5, color: 0xa78bfa, s: 0.14 },
+                { x: 0.5, y: 2.5, z: -3, color: 0x34d399, s: 0.22 },
+            ];
+            sphereData.forEach(d => {
+                const geo = new THREE.SphereGeometry(d.s, 32, 32);
+                const mat = new THREE.MeshStandardMaterial({
+                    color: d.color,
+                    roughness: 0.2,
+                    metalness: 0.7,
+                    emissive: d.color,
+                    emissiveIntensity: 0.3,
+                });
+                const sphere = new THREE.Mesh(geo, mat);
+                sphere.position.set(d.x, d.y, d.z);
+                scene.add(sphere);
+                smallSpheres.push({ mesh: sphere, base: { x: d.x, y: d.y, z: d.z }, speed: 0.3 + Math
+                        .random() * 0.5, offset: Math.random() * 10 });
+            });
+
+            let clock = new THREE.Clock();
+            let mouseX = 0,
+                mouseY = 0;
+            window.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            function animate() {
+                const t = clock.getElapsedTime();
+                particles.rotation.y += 0.0003;
+                particles.rotation.x += 0.0001;
+                torusKnot.rotation.x += 0.003;
+                torusKnot.rotation.y += 0.004;
+                ring.rotation.z += 0.002;
+                ring.rotation.x += 0.001;
+                ring2.rotation.z -= 0.0015;
+                ring2.rotation.y += 0.002;
+                smallSpheres.forEach((s) => {
+                    const sp = s.mesh;
+                    sp.position.x = s.base.x + Math.sin(t * s.speed + s.offset) * 0.7;
+                    sp.position.y = s.base.y + Math.cos(t * s.speed * 0.7 + s.offset) * 0.5;
+                    sp.position.z = s.base.z + Math.sin(t * s.speed * 0.5 + s.offset * 2) * 0.6;
+                    sp.scale.setScalar(1 + Math.sin(t * 2 + s.offset) * 0.12);
+                });
+                pointLight1.intensity = 1.8 + Math.sin(t * 2) * 0.5;
+                pointLight2.intensity = 1.3 + Math.cos(t * 1.8) * 0.4;
+                pointLight3.intensity = 1.2 + Math.sin(t * 2.5) * 0.35;
+                camera.position.x += (mouseX * 1.2 - camera.position.x) * 0.03;
+                camera.position.y += (mouseY * 0.8 - camera.position.y) * 0.03;
+                camera.lookAt(0, 0, -1);
+                renderer.render(scene, camera);
+                requestAnimationFrame(animate);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        })();
+
+        // ==================== SPA NAVIGATION ====================
+        const pages = {
+            home: document.getElementById('home'),
+            about: document.getElementById('about'),
+            projects: document.getElementById('projects'),
+            contact: document.getElementById('contact'),
+        };
+        const navLinks = document.querySelectorAll('.nav-links a, .nav-logo, .hero-buttons a, .footer a');
+
+        function navigateTo(pageId) {
+            if (!pages[pageId]) return;
+            // Hide all pages
+            Object.keys(pages).forEach(key => {
+                pages[key].classList.remove('active');
+            });
+            // Show target page
+            pages[pageId].classList.add('active');
+            // Update nav links
+            document.querySelectorAll('.nav-links a').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === pageId) {
+                    link.classList.add('active');
+                }
+            });
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Close mobile menu
+            hamburger.classList.remove('active');
+            navLinksContainer.classList.remove('open');
+            // Trigger section animations if needed
+            if (pageId === 'about') renderAboutSkills();
+            if (pageId === 'projects') renderProjects();
+        }
+
+        const navLinksContainer = document.getElementById('navLinks');
+        const hamburger = document.getElementById('hamburger');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageId = link.dataset.page;
+                if (pageId) navigateTo(pageId);
+            });
+        });
+
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navLinksContainer.classList.toggle('open');
+        });
+
+        // ==================== TYPING EFFECT ====================
+        const typingTexts = [
+            'Frontend Developer',
+            'React.js Enthusiast',
+            'Web Developer',
+            'CSE Student',
+            'UI/UX Builder',
+            'Tech Learner',
+        ];
+        let typingIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const typingEl = document.getElementById('typingText');
+
+        function typeLoop() {
+            const currentText = typingTexts[typingIndex];
+            if (!isDeleting) {
+                charIndex++;
+                typingEl.textContent = currentText.substring(0, charIndex);
+                if (charIndex === currentText.length) {
+                    isDeleting = true;
+                    setTimeout(typeLoop, 1800);
+                    return;
+                }
+                setTimeout(typeLoop, 70 + Math.random() * 50);
+            } else {
+                charIndex--;
+                typingEl.textContent = currentText.substring(0, charIndex);
+                if (charIndex === 0) {
+                    isDeleting = false;
+                    typingIndex = (typingIndex + 1) % typingTexts.length;
+                    setTimeout(typeLoop, 300);
+                    return;
+                }
+                setTimeout(typeLoop, 35);
+            }
+        }
+        typeLoop();
+
+        // ==================== SKILLS DATA ====================
+        const skillsData = [
+            { name: 'HTML5', icon: '📄', level: 92 },
+            { name: 'CSS3', icon: '🎨', level: 90 },
+            { name: 'JavaScript', icon: '⚡', level: 82 },
+            { name: 'React.js', icon: '⚛️', level: 78 },
+            { name: 'Tailwind CSS', icon: '💨', level: 85 },
+            { name: 'Bootstrap', icon: '🧩', level: 80 },
+            { name: 'Git & GitHub', icon: '📦', level: 75 },
+            { name: 'TypeScript', icon: '📘', level: 65 },
+            { name: 'Responsive Design', icon: '📱', level: 88 },
+            { name: 'UI/UX Principles', icon: '🎯', level: 72 },
+            { name: 'REST APIs', icon: '🔗', level: 68 },
+            { name: 'Chrome DevTools', icon: '🔧', level: 82 },
+        ];
+
+        function renderAboutSkills() {
+            const container = document.getElementById('aboutSkillsGrid');
+            if (container.children.length > 0) return;
+            skillsData.forEach(skill => {
+                const card = document.createElement('div');
+                card.className = 'skill-card';
+                card.innerHTML = `
+                    <span class="skill-icon">${skill.icon}</span>
+                    <div class="skill-name">${skill.name}</div>
+                    <div class="skill-bar-track">
+                        <div class="skill-bar-fill" data-level="${skill.level}"></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            // Animate bars
+            setTimeout(() => {
+                container.querySelectorAll('.skill-bar-fill').forEach(fill => {
+                    fill.style.width = fill.dataset.level + '%';
+                });
+            }, 100);
+        }
+
+        // ==================== PROJECTS DATA ====================
+        const projectsData = [
+            {
+                title: 'UltraEdit Website Clone',
+                tag: 'UI Clone',
+                desc: 'Pixel-accurate clone of the UltraEdit website built with HTML and CSS. Features responsive layouts, structured components, and cross-browser compatibility.',
+                tech: ['HTML5', 'CSS3', 'Responsive Design', 'Flexbox', 'Grid'],
+            },
+            {
+                title: 'Responsive Portfolio Website',
+                tag: 'Personal Project',
+                desc: 'A fully responsive portfolio website built with React.js and Tailwind CSS. Showcases projects, skills, and contact information with smooth animations and modern UI.',
+                tech: ['React.js', 'Tailwind CSS', 'JavaScript', 'HTML5', 'CSS3'],
+            },
+            {
+                title: 'Interactive 3D Resume',
+                tag: 'Creative Project',
+                desc: 'A 3D interactive resume experience with animated backgrounds, glassmorphic design, and smooth scroll effects. Built with Three.js and modern CSS.',
+                tech: ['Three.js', 'JavaScript', 'CSS3', 'Animations', 'WebGL'],
+            },
+            {
+                title: 'Weather Dashboard',
+                tag: 'API Project',
+                desc: 'A weather dashboard that fetches real-time data from a public API. Features clean UI, loading states, error handling, and responsive design.',
+                tech: ['JavaScript', 'REST API', 'CSS3', 'Fetch API', 'Responsive Design'],
+            },
+            {
+                title: 'Task Manager App',
+                tag: 'React Project',
+                desc: 'A task management application with local storage persistence. Features add, edit, delete, and filter functionality with a clean React architecture.',
+                tech: ['React.js', 'JavaScript', 'LocalStorage', 'CSS3', 'Hooks'],
+            },
+        ];
+
+        function renderProjects() {
+            const container = document.getElementById('projectsContainer');
+            if (container.children.length > 0) return;
+            projectsData.forEach((project, index) => {
+                const block = document.createElement('div');
+                block.className = 'project-block';
+                block.style.animationDelay = (index * 0.15) + 's';
+                block.innerHTML = `
+                    <div class="project-block-header">
+                        <span class="project-block-tag">${project.tag}</span>
+                        <h2>${project.title}</h2>
+                    </div>
+                    <p>${project.desc}</p>
+                    <div class="project-tech">
+                        ${project.tech.map(t => `<span>${t}</span>`).join('')}
+                    </div>
+                `;
+                container.appendChild(block);
+                setTimeout(() => {
+                    block.classList.add('visible');
+                }, 100 + index * 150);
+            });
+        }
+
+        // ==================== CONTACT FORM (Working Email) ====================
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('cf-name').value.trim();
+            const email = document.getElementById('cf-email').value.trim();
+            const msg = document.getElementById('cf-msg').value.trim();
+            if (!name || !email || !msg) return;
+
+            // Using mailto: to open user's email client with pre-filled content
+            const subject = encodeURIComponent(`Portfolio Contact from ${name}`);
+            const body = encodeURIComponent(
+                `Name: ${name}\nEmail: ${email}\n\nMessage:\n${msg}\n\n---\nSent from Vishal Chaudhary's Portfolio`
+            );
+            window.location.href = `mailto:vc848977@gmail.com?subject=${subject}&body=${body}`;
+
+            // Show success feedback
+            alert('📧 Your email client will open to send the message. Thank you!');
+            this.reset();
+        });
+
+        // ==================== STAT COUNTER ANIMATION ====================
+        function animateCounters() {
+            const statNumbers = document.querySelectorAll('.stat-number[data-target]');
+            statNumbers.forEach(el => {
+                const target = parseInt(el.dataset.target);
+                const duration = 1200;
+                const startTime = performance.now();
+                const suffix = target > 2020 ? '' : '';
+
+                function updateCounter(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const value = Math.floor(progress * target);
+                    el.textContent = value + suffix;
+                    if (progress < 1) {
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        el.textContent = target + suffix;
+                    }
+                }
+                requestAnimationFrame(updateCounter);
+            });
+        }
+
+        // ==================== NAVBAR SCROLL EFFECT ====================
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // ==================== INITIALIZE ====================
+        // Render initial pages
+        renderAboutSkills();
+        renderProjects();
+        animateCounters();
+
+        // Support hash navigation on load
+        window.addEventListener('load', () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash && pages[hash]) {
+                navigateTo(hash);
+            } else {
+                navigateTo('home');
+            }
+        });
+        // Handle browser back/forward
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash && pages[hash]) {
+                navigateTo(hash);
+            }
+        });
+
+        console.log('✨ Portfolio ready! Explore Home, About, Projects, and Contact pages.');
+    </script>
